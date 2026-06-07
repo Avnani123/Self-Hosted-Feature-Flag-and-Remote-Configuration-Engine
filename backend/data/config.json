@@ -1,8 +1,8 @@
-﻿{
+﻿  {
   "flags": {
     "new_checkout_flow": { "status": true, "rule": "Beta Users Only" },
     "dark_mode_beta": { "status": false, "rule": "Everyone" },
-    "ai_recommendations": { "status": true, "rule": "Everyone" }
+    "ai_recommendations": { "status": true, "rule": "10% Rollout" }
   },
   "configs": {
     "welcome_message": "Hello, World!",
