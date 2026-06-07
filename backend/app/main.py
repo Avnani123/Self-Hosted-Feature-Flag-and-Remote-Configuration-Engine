@@ -1,5 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from app.config_store import read_config, update_flag, update_config_variable
+from .config_store import read_config, update_flag, update_config_variable
 import asyncio
 import json
 
