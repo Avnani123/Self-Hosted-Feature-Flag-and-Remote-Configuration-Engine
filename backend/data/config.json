@@ -1,0 +1,11 @@
+﻿{
+  "flags": {
+    "new_checkout_flow": { "status": true, "rule": "Beta Users Only" },
+    "dark_mode_beta": { "status": false, "rule": "Everyone" },
+    "ai_recommendations": { "status": true, "rule": "Everyone" }
+  },
+  "configs": {
+    "welcome_message": "Hello, World!",
+    "max_login_attempts": 5
+  }
+}
