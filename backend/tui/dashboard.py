@@ -18,14 +18,20 @@ class FlagItem(ListItem):
         self.flag_name = flag_name
         self.status = status
         self.rule = rule
+        
+        # Create an internal Static widget to safely hold and update text markup
+        self.label = Static()
         self.update_text()
 
+    def compose(self) -> ComposeResult:
+        """Yield the label widget to render it inside the ListItem."""
+        yield self.label
+
     def update_text(self) -> None:
-        """Refreshes the row label text visually."""
+        """Refreshes the row label text visually inside our internal Static widget."""
         status_str = "[ON] " if self.status else "[OFF]"
-        # Style the ON/OFF text using Textual markup syntax
         color = "green" if self.status else "red"
-        self.update(f"[{color}] {status_str} [/{color}]  [b]{self.flag_name:<22}[/b] : ({self.rule})")
+        self.label.update(f"[{color}] {status_str} [/{color}]  [b]{self.flag_name:<22}[/b] : ({self.rule})")
 
     async def toggle(self) -> None:
         """Toggles the state locally and hits the FastAPI backend to broadcast it."""
@@ -40,8 +46,7 @@ class FlagItem(ListItem):
                     self.status = new_status
                     self.update_text()
         except httpx.RequestError:
-            # If server isn't running, show error in the item console
-            self.update(f"[red][ERR] Could not reach FastAPI server at {SERVER_URL}[/red]")
+            self.label.update(f"[red][ERR] Could not reach FastAPI server at {SERVER_URL}[/red]")
 
 class FeatureFlagApp(App):
     """The main interactive Terminal User Interface (TUI) Application."""
@@ -66,12 +71,14 @@ class FeatureFlagApp(App):
         color: #ffffff;
     }
     Static {
+        width: 100%;
+    }
+    .section-title {
         width: 80%;
         margin-left: 4;
     }
     """
 
-    # Register convenient global keyboard shortcuts
     BINDINGS = [
         Binding("space", "toggle_flag", "Toggle Selected Flag"),
         Binding("q", "quit", "Quit Dashboard"),
@@ -79,21 +86,24 @@ class FeatureFlagApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        yield Static("\n[b][yellow]ACTIVE FLAGS (Use arrow keys to navigate, Space to flip switch):[/yellow][/b]")
+        yield Static("\n[b][yellow]ACTIVE FLAGS (Use arrow keys to navigate, Space to flip switch):[/yellow][/b]", classes="section-title")
         
-        # Pull the initial data configurations from our config.json
+        # 1. Pull the configurations 
         config_data = read_config()
         
-        self.flag_list = ListView()
+        # 2. Build the list of child items first
+        items = []
         for name, details in config_data.get("flags", {}).items():
-            self.flag_list.append(FlagItem(name, details["status"], details["rule"]))
+            items.append(FlagItem(name, details["status"], details["rule"]))
             
+        # 3. Create the ListView and pass children directly into its constructor!
+        # This completely avoids calling .append() before mounting.
+        self.flag_list = ListView(*items)
         yield self.flag_list
         
-        # Render static text fields for remote config variables
-        yield Static("\n[b][yellow]CONFIG VARIABLES (Static properties):[/yellow][/b]")
+        yield Static("\n[b][yellow]CONFIG VARIABLES (Static properties):[/yellow][/b]", classes="section-title")
         for key, val in config_data.get("configs", {}).items():
-            yield Static(f" - {key:<20} : [cyan]\"{val}\"[/cyan]")
+            yield Static(f" - {key:<20} : [cyan]\"{val}\"[/cyan]", classes="section-title")
             
         yield Footer()
 

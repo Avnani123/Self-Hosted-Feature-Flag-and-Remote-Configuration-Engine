@@ -9,7 +9,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # This library lets Flutter open a live real-time connection to our Python server
   web_socket_channel: ^3.0.1 
 
 dev_dependencies:

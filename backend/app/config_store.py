@@ -1,35 +1,21 @@
 import json
 import os
+from pathlib import Path
 
-# Locate the config.json file relative to this script
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG_PATH = os.path.join(BASE_DIR, "data", "config.json")
+# Build the path relative to this file's directory:
+# config_store.py is in backend/app/ -> parent is backend/ -> data/config.json
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "config.json"
+
+# Your existing path config setup remains above this line...
 
 def read_config():
-    """Reads the current feature flags and configurations from the JSON file."""
+    """Reads the current feature flags and configurations from the JSON file securely."""
     try:
-        with open(CONFIG_PATH, "r") as file:
+        # Changing encoding to 'utf-8-sig' strips away the 'ï»¿' mark automatically!
+        with open(CONFIG_PATH, "r", encoding="utf-8-sig") as file:
             return json.load(file)
     except FileNotFoundError:
-        # Fallback dictionary if file doesn't exist
         return {"flags": {}, "configs": {}}
-
-def update_flag(flag_name: str, status: bool):
-    """Toggles a specific feature flag's status and saves it."""
-    data = read_config()
-    if flag_name in data["flags"]:
-        data["flags"][flag_name]["status"] = status
-        with open(CONFIG_PATH, "w") as file:
-            json.dump(data, file, indent=2)
-        return True
-    return False
-
-def update_config_variable(config_name: str, value):
-    """Updates a remote configuration variable text/number value and saves it."""
-    data = read_config()
-    if config_name in data["configs"]:
-        data["configs"][config_name] = value
-        with open(CONFIG_PATH, "w") as file:
-            json.dump(data, file, indent=2)
-        return True
-    return False
+    except json.JSONDecodeError:
+        # Fallback if the json is temporarily malformed or blank
+        return {"flags": {}, "configs": {}}
