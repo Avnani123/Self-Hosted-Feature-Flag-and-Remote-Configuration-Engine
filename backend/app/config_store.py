@@ -1,21 +1,40 @@
-import json
 import os
-from pathlib import Path
+import json
 
-# Build the path relative to this file's directory:
-# config_store.py is in backend/app/ -> parent is backend/ -> data/config.json
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "config.json"
-
-# Your existing path config setup remains above this line...
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG_PATH = os.path.join(BASE_DIR, "data", "config.json")
 
 def read_config():
-    """Reads the current feature flags and configurations from the JSON file securely."""
+    """Reads the current configuration from config.json with BOM protection"""
     try:
-        # Changing encoding to 'utf-8-sig' strips away the 'ï»¿' mark automatically!
+        if not os.path.exists(CONFIG_PATH):
+            default_config = {
+                "flags": {
+                    "new_checkout_flow": {"status": False},
+                    "dark_mode_beta": {"status": False},
+                    "ai_recommendations": {"status": True}
+                },
+                "configs": {
+                    "welcome_message": "Welcome to the App!"
+                }
+            }
+            write_config(default_config)
+            return default_config
+            
+        # FIX: Changed encoding to 'utf-8-sig' to automatically strip the invisible BOM character marker
         with open(CONFIG_PATH, "r", encoding="utf-8-sig") as file:
             return json.load(file)
-    except FileNotFoundError:
+    except Exception as e:
+        print(f"Error reading config: {e}")
         return {"flags": {}, "configs": {}}
-    except json.JSONDecodeError:
-        # Fallback if the json is temporarily malformed or blank
-        return {"flags": {}, "configs": {}}
+
+def write_config(new_config):
+    """Writes the updated configuration back to config.json"""
+    try:
+        os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+        with open(CONFIG_PATH, "w", encoding="utf-8") as file:
+            json.dump(new_config, file, indent=4)
+        return True
+    except Exception as e:
+        print(f"Error writing config: {e}")
+        return False

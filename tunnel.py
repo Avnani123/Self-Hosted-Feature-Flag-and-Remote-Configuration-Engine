@@ -21,14 +21,20 @@ def poll_and_push():
             
             # 2. Only broadcast to the cloud if something actually changed!
             if current_config != last_state:
-                # We use KVstore.io - a completely free, zero-auth public JSON pipeline
                 connection = http.client.HTTPSConnection("kvstore.io")
                 headers = {'Content-type': 'application/json'}
                 
-                # We use your unique username string from your screenshot to avoid collisions
                 url = "/api/collections/avani_singh/items/feature_flags"
                 
-                connection.request("PUT", url, json.dumps(current_config), headers)
+                # FIX: Wrap the configuration inside the exact 'key' and 'value' 
+                # structure that your main.dart file expects!
+                wrapped_payload = {
+                    "key": "feature_flags",
+                    "value": json.dumps(current_config)  # Encodes the config dict into a string
+                }
+                
+                # Send the wrapped payload instead of the raw configuration
+                connection.request("PUT", url, json.dumps(wrapped_payload), headers)
                 response = connection.getresponse()
                 
                 if response.status == 201 or response.status == 200:
@@ -37,7 +43,8 @@ def poll_and_push():
                 connection.close()
                 
         except Exception as e:
-            pass # Keep looping gracefully if connection hiccups occur
+            # Print the exception to a local terminal log so we aren't completely blind if a bug occurs
+            print(f"⚠️ Tunnel Error: {e}")
             
         time.sleep(0.5) # Poll for user dashboard keystrokes every 500ms
 

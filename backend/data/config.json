@@ -1,11 +1,22 @@
-﻿  {
-  "flags": {
-    "new_checkout_flow": { "status": true, "rule": "Beta Users Only" },
-    "dark_mode_beta": { "status": false, "rule": "Everyone" },
-    "ai_recommendations": { "status": true, "rule": "10% Rollout" }
-  },
-  "configs": {
-    "welcome_message": "Hello, World!",
-    "max_login_attempts": 5
-  }
+{
+    "flags": {
+        "new_checkout_flow": {
+            "status": true,
+            "description": "Toggle the green modern layout flow",
+            "rule": "default"
+        },
+        "dark_mode_beta": {
+            "status": false,
+            "description": "Enable application wide midnight colors",
+            "rule": "default"
+        },
+        "ai_recommendations": {
+            "status": true,
+            "description": "Show smart checkout items banner layout",
+            "rule": "default"
+        }
+    },
+    "configs": {
+        "welcome_message": "\ud83c\udfaf Live Local Feature Flags Connected!"
+    }
 }
