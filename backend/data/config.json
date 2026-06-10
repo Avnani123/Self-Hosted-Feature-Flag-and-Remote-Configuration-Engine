@@ -6,7 +6,7 @@
             "rule": "default"
         },
         "dark_mode_beta": {
-            "status": false,
+            "status": true,
             "description": "Enable application wide midnight colors",
             "rule": "default"
         },

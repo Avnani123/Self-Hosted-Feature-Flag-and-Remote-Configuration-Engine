@@ -1,0 +1,6 @@
+{
+    "new_checkout_flow": true,
+    "dark_mode_beta": true,
+    "ai_recommendations": false,
+    "max_login_attempts": 5
+}

@@ -1,118 +1,131 @@
-import sys
+import json
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import os
-import httpx
-from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, ListItem, ListView, Static
-from textual.binding import Binding
+import msvcrt  # Windows-native library for instant key presses
 
-# Ensure the backend directory is in the Python path so we can import config_store
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.config_store import read_config
+# ==================================================
+# 1. LIVE BACKEND STATE CONFIGURATION MAP
+# ==================================================
+config_data = {
+    "new_checkout_flow": True,
+    "dark_mode_beta": False,
+    "ai_recommendations": True,
+    "max_login_attempts": 5
+}
 
-SERVER_URL = "http://localhost:8000"
+# ==================================================
+# 2. FILE STORAGE MANAGEMENT
+# ==================================================
+def save_config_to_disk():
+    """Writes the current configuration matrix instantly to config.json"""
+    with open("config.json", "w") as f:
+        json.dump(config_data, f, indent=4)
 
-class FlagItem(ListItem):
-    """A custom interactive row item for each feature flag."""
-    def __init__(self, flag_name: str, status: bool, rule: str) -> None:
-        super().__init__()
-        self.flag_name = flag_name
-        self.status = status
-        self.rule = rule
-        
-        # Create an internal Static widget to safely hold and update text markup
-        self.label = Static()
-        self.update_text()
+# ==================================================
+# 3. REAL-TIME HTTP STREAMING SERVER (FOR FLUTLAB)
+# ==================================================
+class ConfigApiServer(BaseHTTPRequestHandler):
+    def do_GET(self):
+        """Streams live configuration flags as a JSON payload safely"""
+        if self.path == '/flags':
+            try:
+                self.send_response(200)
+                
+                # ✅ FIXED: Comprehensive CORS Access Headers to Unblock FlutLab
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
+                self.end_headers()
+                
+                response_json = json.dumps(config_data)
+                self.wfile.write(response_json.encode('utf-8'))
+            except Exception:
+                # Quietly ignore broken connections or WinErrors without breaking the TUI
+                pass
+        else:
+            try:
+                self.send_response(404)
+                self.end_headers()
+            except Exception:
+                pass
 
-    def compose(self) -> ComposeResult:
-        """Yield the label widget to render it inside the ListItem."""
-        yield self.label
-
-    def update_text(self) -> None:
-        """Refreshes the row label text visually inside our internal Static widget."""
-        status_str = "[ON] " if self.status else "[OFF]"
-        color = "green" if self.status else "red"
-        self.label.update(f"[{color}] {status_str} [/{color}]  [b]{self.flag_name:<22}[/b] : ({self.rule})")
-
-    async def toggle(self) -> None:
-        """Toggles the state locally and hits the FastAPI backend to broadcast it."""
-        new_status = not self.status
+    def do_OPTIONS(self):
+        """Grants automated browser permission requests instantly"""
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{SERVER_URL}/toggle-flag",
-                    params={"name": self.flag_name, "status": str(new_status).lower()}
-                )
-                if response.status_code == 200:
-                    self.status = new_status
-                    self.update_text()
-        except httpx.RequestError:
-            self.label.update(f"[red][ERR] Could not reach FastAPI server at {SERVER_URL}[/red]")
-
-class FeatureFlagApp(App):
-    """The main interactive Terminal User Interface (TUI) Application."""
-    TITLE = "🚀 FEATURE FLAG & CONFIG MANAGER"
-    CSS = """
-    Screen {
-        background: #1e1e1e;
-        align: center middle;
-    }
-    ListView {
-        width: 80%;
-        height: auto;
-        margin: 2;
-        border: solid #333333;
-        background: #121212;
-    }
-    ListItem {
-        padding: 1 2;
-    }
-    ListItem:focus {
-        background: #2b2b2b;
-        color: #ffffff;
-    }
-    Static {
-        width: 100%;
-    }
-    .section-title {
-        width: 80%;
-        margin-left: 4;
-    }
-    """
-
-    BINDINGS = [
-        Binding("space", "toggle_flag", "Toggle Selected Flag"),
-        Binding("q", "quit", "Quit Dashboard"),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield Header(show_clock=True)
-        yield Static("\n[b][yellow]ACTIVE FLAGS (Use arrow keys to navigate, Space to flip switch):[/yellow][/b]", classes="section-title")
-        
-        # 1. Pull the configurations 
-        config_data = read_config()
-        
-        # 2. Build the list of child items first
-        items = []
-        for name, details in config_data.get("flags", {}).items():
-            items.append(FlagItem(name, details["status"], details["rule"]))
+            self.send_response(200)
             
-        # 3. Create the ListView and pass children directly into its constructor!
-        # This completely avoids calling .append() before mounting.
-        self.flag_list = ListView(*items)
-        yield self.flag_list
-        
-        yield Static("\n[b][yellow]CONFIG VARIABLES (Static properties):[/yellow][/b]", classes="section-title")
-        for key, val in config_data.get("configs", {}).items():
-            yield Static(f" - {key:<20} : [cyan]\"{val}\"[/cyan]", classes="section-title")
-            
-        yield Footer()
+            # ✅ FIXED: Mirroring matching CORS verification headers for pre-flight handshakes
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
+            self.end_headers()
+        except Exception:
+            pass
 
-    async def action_toggle_flag(self) -> None:
-        """Triggers the toggle event on whichever row item is currently focused."""
-        selected_item = self.flag_list.highlighted_child
-        if isinstance(selected_item, FlagItem):
-            await selected_item.toggle()
+    def log_message(self, format, *args):
+        """Overrides logging to keep the terminal screen completely clean"""
+        return
+
+class RobustHTTPServer(HTTPServer):
+    def handle_error(self, request, client_address):
+        """Catches and suppresses background [WinError 10053/10054] traceback pollution"""
+        pass
+
+def run_api_background_server():
+    """Spins up the robust web endpoint server on local port 5000"""
+    server = RobustHTTPServer(('0.0.0.0', 5000), ConfigApiServer)
+    server.serve_forever()
+
+# ==================================================
+# 4. TERMINAL INTERACTIVE INTERFACE RENDERER
+# ==================================================
+def clear_terminal():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+def render_terminal_ui():
+    clear_terminal()
+    print("==================================================")
+    print(" 🚀 FEATURE FLAG & CONFIG MANAGER (VS CODE BACKEND)")
+    print("==================================================")
+    print("\nACTIVE FLAGS:")
+    print(f" [1] new_checkout_flow  : [{'ON ' if config_data['new_checkout_flow'] else 'OFF'}] (Beta Users Only)")
+    print(f" [2] dark_mode_beta     : [{'ON ' if config_data['dark_mode_beta'] else 'OFF'}] (Everyone)")
+    print(f" [3] ai_recommendations : [{'ON ' if config_data['ai_recommendations'] else 'OFF'}] (Everyone)")
+    print("\nCONFIG VARIABLES:")
+    print(f" - max_login_attempts   : {config_data['max_login_attempts']}")
+    print("==================================================")
+    print(" Press [1, 2, 3, 4] to toggle instantly | [Q] Quit")
+    print("==================================================")
+    print("👇 CLICK HERE TO FOCUS TERMINAL BEFORE TYPING 👇")
+
+def main():
+    save_config_to_disk()
+    
+    # Run network listener inside a detached background worker thread
+    api_thread = threading.Thread(target=run_api_background_server, daemon=True)
+    api_thread.start()
+    
+    while True:
+        render_terminal_ui()
+        
+        # Intercept raw keyboard hit immediately (no need to press Enter!)
+        char = msvcrt.getch().decode('utf-8').lower()
+        
+        if char == '1':
+            config_data["new_checkout_flow"] = not config_data["new_checkout_flow"]
+        elif char == '2':
+            config_data["dark_mode_beta"] = not config_data["dark_mode_beta"]
+        elif char == '3':
+            config_data["ai_recommendations"] = not config_data["ai_recommendations"]
+        elif char == '4':
+            config_data["max_login_attempts"] = 3 if config_data["max_login_attempts"] == 5 else 5
+        elif char == 'q':
+            print("\nShutting down control plane cleanly...")
+            break
+        
+        save_config_to_disk()
 
 if __name__ == "__main__":
-    app = FeatureFlagApp()
-    app.run()
+    main()
