@@ -18,15 +18,11 @@ This project connects a low-latency Python backend dashboard with a cross-platfo
 
 ## 🏗️ Architecture & System Design
 
-+-----------------------------------+             +-----------------------+             +---------------------------+
-|        PYTHON CONTROL PLANE       |             |   LOCAL TUNNEL PROXY  |             |      FLUTTER CLIENT       |
-|            (backend/)             |  =======>   | (Bypass / CORS Layer) |  =======>   |        (frontend/)        |
-| - Interrupt-Driven Keyboard I/O   |             | - Public URL Stream   |             | - Live Polling Loop       |
-| - State Management (flags.json)   |             | - Custom Pass Headers |             | - Dynamic UI & Logic Swap |
-+-----------------------------------+             +-----------------------+             +---------------------------+
+```text
+[ PYTHON CONTROL PLANE ]  =======>  [ LOCAL TUNNEL PROXY ]  =======>  [ FLUTTER CLIENT ]
+     (backend/)                         (Bypass / CORS)                  (frontend/)
 
----
-
+```
 ## 🛠️ Tech Stack
 
 * **Backend:** Python 3.x (`http.server`, `threading`, `json`, `msvcrt`)
