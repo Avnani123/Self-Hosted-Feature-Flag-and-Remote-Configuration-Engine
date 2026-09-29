@@ -1,6 +1,3 @@
-Here is the complete, single-copyable README markdown specifically updated to match your exact repository folder structure (`backend/`, `frontend/`, `flags.json`, `tunnel.py`).
-
-```markdown
 # ⚡ Self-Hosted Feature Flag & Remote Configuration Engine
 
 A multi-threaded, enterprise-grade Remote Configuration and Feature Flag control plane designed for real-time app experimentation, dynamic runtime variable tweaks, and user segmentation.
@@ -21,17 +18,12 @@ This project connects a low-latency Python backend dashboard with a cross-platfo
 
 ## 🏗️ Architecture & System Design
 
-
-```
-
 +-----------------------------------+             +-----------------------+             +---------------------------+
 |        PYTHON CONTROL PLANE       |             |   LOCAL TUNNEL PROXY  |             |      FLUTTER CLIENT       |
 |            (backend/)             |  =======>   | (Bypass / CORS Layer) |  =======>   |        (frontend/)        |
 | - Interrupt-Driven Keyboard I/O   |             | - Public URL Stream   |             | - Live Polling Loop       |
 | - State Management (flags.json)   |             | - Custom Pass Headers |             | - Dynamic UI & Logic Swap |
 +-----------------------------------+             +-----------------------+             +---------------------------+
-
-```
 
 ---
 
@@ -56,8 +48,6 @@ This project connects a low-latency Python backend dashboard with a cross-platfo
    ```bash
    git clone [https://github.com/Avnani123/Self-Hosted-Feature-Flag-and-Remote-Configuration-Engine.git](https://github.com/Avnani123/Self-Hosted-Feature-Flag-and-Remote-Configuration-Engine.git)
    cd Self-Hosted-Feature-Flag-and-Remote-Configuration-Engine
-
-```
 
 2. **Start the Python Control Plane**
 Navigate to your backend directory and run:
